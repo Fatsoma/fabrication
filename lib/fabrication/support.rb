@@ -10,7 +10,7 @@ class Fabrication::Support
       if class_or_to_s.respond_to?(:to_sym)
         class_name = variable_name_to_class_name(class_or_to_s)
         class_name.split('::').inject(Object) do |object, string|
-          object.const_get(string)
+          object.const_defined?(string) ? object.const_get(string) : object.const_missing(string)
         end
       else
         class_or_to_s

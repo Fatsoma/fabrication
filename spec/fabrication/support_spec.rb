@@ -32,6 +32,17 @@ describe Fabrication::Support do
 
     end
 
+    context "with a subclass that also exists in root namespace" do
+      class SubClass; end
+      class ContainerClass
+        class SubClass; end
+      end
+
+      it "returns the subclass" do
+        Fabrication::Support.class_for('ContainerClass::SubClass').should == ContainerClass::SubClass
+      end
+    end
+
   end
 
   describe ".find_definitions" do
