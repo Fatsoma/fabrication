@@ -8,10 +8,11 @@ class Fabrication::Schematic::Definition
     Fabrication::Generator::Base
   ]
 
-  attr_accessor :klass
-  def initialize(klass, &block)
-    self.klass = klass
-    process_block(&block)
+  attr_accessor :name, :options, :block
+  def initialize(name, options={}, &block)
+    self.name = name
+    self.options = options
+    self.block = block
   end
 
   def process_block(&block)
@@ -34,16 +35,18 @@ class Fabrication::Schematic::Definition
 
   attr_writer :attributes
   def attributes
+    load_body
     @attributes ||= []
   end
 
   attr_writer :callbacks
   def callbacks
+    load_body
     @callbacks ||= {}
   end
 
   def generator
-    @generator ||= GENERATORS.detect { |gen| gen.supports?(klass) }
+    @generator ||= Fabrication::Config.generator_for(GENERATORS, klass)
   end
 
   def sorted_attributes
@@ -51,11 +54,12 @@ class Fabrication::Schematic::Definition
   end
 
   def build(overrides={}, &block)
+    Fabrication.manager.prevent_recursion!
     if Fabrication.manager.to_params_stack.any?
       to_params(overrides, &block)
     else
       begin
-        Fabrication.manager.build_stack << self
+        Fabrication.manager.build_stack << name
         merge(overrides, &block).instance_eval do
           generator.new(klass).build(sorted_attributes, callbacks)
         end
@@ -66,19 +70,26 @@ class Fabrication::Schematic::Definition
   end
 
   def fabricate(overrides={}, &block)
+    Fabrication.manager.prevent_recursion!
     if Fabrication.manager.build_stack.any?
       build(overrides, &block)
     elsif Fabrication.manager.to_params_stack.any?
       to_params(overrides, &block)
     else
-      merge(overrides, &block).instance_eval do
-        generator.new(klass).create(sorted_attributes, callbacks)
+      begin
+        Fabrication.manager.create_stack << name
+        merge(overrides, &block).instance_eval do
+          generator.new(klass).create(sorted_attributes, callbacks)
+        end
+      ensure
+        Fabrication.manager.create_stack.pop
       end
     end
   end
 
   def to_params(overrides={}, &block)
-    Fabrication.manager.to_params_stack << self
+    Fabrication.manager.prevent_recursion!
+    Fabrication.manager.to_params_stack << name
     merge(overrides, &block).instance_eval do
       generator.new(klass).to_params(sorted_attributes)
     end
@@ -101,6 +112,15 @@ class Fabrication::Schematic::Definition
     self.attributes = original.attributes.clone
   end
 
+  def generate_value(name, params)
+    if params[:count] || params[:rand]
+      name = Fabrication::Support.singularize(name.to_s)
+      proc { Fabricate.build(params[:fabricator] || name) }
+    else
+      proc { Fabricate(params[:fabricator] || name) }
+    end
+  end
+
   def merge(overrides={}, &block)
     clone.tap do |definition|
       definition.process_block(&block)
@@ -110,12 +130,35 @@ class Fabrication::Schematic::Definition
     end
   end
 
-  def generate_value(name, params)
-    if params[:count]
-      name = Fabrication::Support.singularize(name.to_s)
-      proc { Fabricate.build(params[:fabricator] || name) }
+  def klass
+    @klass ||= Fabrication::Support.class_for(
+      options[:class_name] ||
+        (parent && parent.klass) ||
+        options[:from] ||
+        name
+    )
+  end
+
+  protected
+
+  def loaded?
+    !!(@loaded ||= nil)
+  end
+
+  def load_body
+    return if loaded?
+    @loaded = true
+
+    if parent
+      merge_result = parent.merge(&block)
+      @attributes = merge_result.attributes
+      @callbacks = merge_result.callbacks
     else
-      proc { Fabricate(params[:fabricator] || name) }
+      process_block(&block)
     end
+  end
+
+  def parent
+    @parent ||= Fabrication.manager[options[:from].to_s] if options[:from]
   end
 end

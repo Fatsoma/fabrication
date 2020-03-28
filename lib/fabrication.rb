@@ -1,3 +1,5 @@
+require 'fabrication/railtie' if defined?(Rails::Railtie)
+
 autoload :Fabricate, 'fabricate'
 
 if defined?(Rake)
@@ -10,6 +12,7 @@ module Fabrication
   autoload :UnfabricatableError,      'fabrication/errors/unfabricatable_error'
   autoload :UnknownFabricatorError,   'fabrication/errors/unknown_fabricator_error'
   autoload :MisplacedFabricateError,  'fabrication/errors/misplaced_fabricate_error'
+  autoload :InfiniteRecursionError,   'fabrication/errors/infinite_recursion_error'
 
   module Schematic
     autoload :Attribute,  'fabrication/schematic/attribute'

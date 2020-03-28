@@ -8,7 +8,7 @@ class Fabrication::Support
 
     def class_for(class_or_to_s)
       class_name = variable_name_to_class_name(class_or_to_s)
-      klass = constantize(class_name)
+      constantize(class_name)
     rescue NameError => original_error
       raise Fabrication::UnfabricatableError.new(class_or_to_s, original_error)
     end
@@ -55,6 +55,14 @@ class Fabrication::Support
       string.singularize
     rescue
       string.end_with?('s') ? string[0..-2] : string
+    end
+
+    def underscore(string)
+      string.gsub(/::/, '/').
+        gsub(/([A-Z]+)([A-Z][a-z])/,'\1_\2').
+        gsub(/([a-z\d])([A-Z])/,'\1_\2').
+        tr("-", "_").
+        downcase
     end
 
   end

@@ -2,7 +2,7 @@ require 'ostruct'
 
 class Persistable
   def persisted?
-    @persisted
+    @persisted ||= nil
   end
   def save!
     @persisted = true
@@ -34,13 +34,19 @@ class ParentRubyObject < Persistable
   def child_ruby_objects
     @child_ruby_objects ||= []
   end
+
+  def before_validation_value
+    1
+  end
 end
 
 class ChildRubyObject < Persistable
   attr_accessor \
-    :parent_ruby_object,
     :parent_ruby_object_id,
     :number_field
+
+  attr_reader \
+    :parent_ruby_object
 
   def parent_ruby_object=(parent_ruby_object)
     @parent_ruby_object = parent_ruby_object
@@ -65,5 +71,28 @@ class Sequencer
 
   class Namespaced
     attr_accessor :iterator
+  end
+end
+
+class ClassWithInit < Struct.new(:arg1, :arg2)
+end
+
+class ImmutableUser
+  def initialize(attributes)
+    @attributes = attributes.to_hash
+  end
+
+  def name
+    @attributes.fetch(:name)
+  end
+end
+
+class ImmutableGenerator < Fabrication::Generator::Base
+  def self.supports?(klass)
+    klass == ImmutableUser
+  end
+
+  def build_instance
+    self._instance = _klass.new(_attributes)
   end
 end

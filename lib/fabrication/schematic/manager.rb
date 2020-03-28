@@ -8,7 +8,9 @@ class Fabrication::Schematic::Manager
     clear
   end
 
-  def initializing?; @initializing end
+  def initializing?
+    @initializing ||= nil
+  end
 
   def schematics
     @schematics ||= {}
@@ -31,6 +33,10 @@ class Fabrication::Schematic::Manager
     schematics[name.to_sym]
   end
 
+  def create_stack
+    @create_stack ||= []
+  end
+
   def build_stack
     @build_stack ||= []
   end
@@ -41,9 +47,11 @@ class Fabrication::Schematic::Manager
 
   def load_definitions
     preinitialize
-    Fabrication::Config.fabricator_path.each do |folder|
-      Dir.glob(File.join(Fabrication::Config.path_prefix, folder, '**', '*.rb')).sort.each do |file|
-        load file
+    Fabrication::Config.path_prefixes.each do |prefix|
+      Fabrication::Config.fabricator_paths.each do |folder|
+        Dir.glob(File.join(prefix.to_s, folder, '**', '*.rb')).sort.each do |file|
+          load file
+        end
       end
     end
   rescue Exception => e
@@ -54,6 +62,12 @@ class Fabrication::Schematic::Manager
     freeze
   end
 
+  def prevent_recursion!
+    (create_stack + build_stack + to_params_stack).group_by(&:to_sym).each do |name, values|
+      raise Fabrication::InfiniteRecursionError.new(name) if values.length > Fabrication::Config.recursion_limit
+    end
+  end
+
   protected
 
   def raise_if_registered(name)
@@ -61,28 +75,8 @@ class Fabrication::Schematic::Manager
   end
 
   def store(name, aliases, options, &block)
-    schematic = schematics[name] = schematic_for(name, options, &block)
+    schematic = schematics[name] = Fabrication::Schematic::Definition.new(name, options, &block)
     aliases.each { |as| schematics[as.to_sym] = schematic }
-  end
-
-  def resolve_class(name, parent, options)
-    Fabrication::Support.class_for(
-      options[:class_name] ||
-        (parent && parent.klass) ||
-        options[:from] ||
-        name
-    )
-  end
-
-  def schematic_for(name, options, &block)
-    parent = self[options[:from].to_s] if options[:from]
-    klass = resolve_class(name, parent, options)
-
-    if parent
-      parent.merge(&block).tap { |s| s.klass = klass }
-    else
-      Fabrication::Schematic::Definition.new(klass, &block)
-    end
   end
 
 end

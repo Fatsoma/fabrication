@@ -5,7 +5,7 @@ describe Fabrication::Generator::Base do
   describe ".supports?" do
     subject { Fabrication::Generator::Base }
     it "supports any object" do
-      subject.supports?(Object).should be_true
+      expect(subject.supports?(Object)).to be true
     end
   end
 
@@ -14,7 +14,7 @@ describe Fabrication::Generator::Base do
     let(:generator) { Fabrication::Generator::Base.new(ParentRubyObject) }
 
     let(:attributes) do
-      Fabrication::Schematic::Definition.new(ParentRubyObject) do
+      Fabrication::Schematic::Definition.new('ParentRubyObject') do
         string_field 'different content'
         extra_fields(count: 4) { |attrs, index| "field #{index}" }
       end.attributes
@@ -37,31 +37,29 @@ describe Fabrication::Generator::Base do
     context "with on_init block" do
       subject { schematic.fabricate }
 
-      let(:klass) { Struct.new :arg1, :arg2 }
-
       context "using init_with" do
         let(:schematic) do
-          Fabrication::Schematic::Definition.new(klass) do
+          Fabrication::Schematic::Definition.new('ClassWithInit') do
             on_init { init_with(:a, :b) }
           end
         end
 
         it "sends the return value of the block to the klass' initialize method" do
-          subject.arg1.should == :a
-          subject.arg2.should == :b
+          expect(subject.arg1).to eq(:a)
+          expect(subject.arg2).to eq(:b)
         end
       end
 
       context "not using init_with" do
         let(:schematic) do
-          Fabrication::Schematic::Definition.new(klass) do
+          Fabrication::Schematic::Definition.new('ClassWithInit') do
             on_init { [ :a, :b ] }
           end
         end
 
         it "sends the return value of the block to the klass' initialize method" do
-          subject.arg1.should == :a
-          subject.arg2.should == :b
+          expect(subject.arg1).to eq(:a)
+          expect(subject.arg2).to eq(:b)
         end
 
       end
@@ -70,24 +68,22 @@ describe Fabrication::Generator::Base do
     context "with initialize_with block" do
       subject { schematic.fabricate }
 
-      let(:klass) { Struct.new :arg1, :arg2 }
-
       context "using only raw values" do
         let(:schematic) do
-          Fabrication::Schematic::Definition.new(klass) do
+          Fabrication::Schematic::Definition.new('ClassWithInit') do
             initialize_with { Struct.new(:arg1, :arg2).new(:fixed_value) }
           end
         end
 
         it "saves the return value of the block as instance" do
-          subject.arg1.should == :fixed_value
-          subject.arg2.should == nil
+          expect(subject.arg1).to eq(:fixed_value)
+          expect(subject.arg2).to eq(nil)
         end
       end
 
       context "using attributes inside block" do
         let(:schematic) do
-           Fabrication::Schematic::Definition.new(klass) do
+           Fabrication::Schematic::Definition.new('ClassWithInit') do
              arg1 10
              initialize_with { Struct.new(:arg1, :arg2).new(arg1, arg1 + 10) }
           end
@@ -95,16 +91,16 @@ describe Fabrication::Generator::Base do
 
         context "without override" do
           it "saves the return value of the block as instance" do
-            subject.arg1.should == 10
-            subject.arg2.should == 20
+            expect(subject.arg1).to eq(10)
+            expect(subject.arg2).to eq(20)
           end
         end
 
         context "with override" do
           subject { schematic.fabricate(arg1: 30) }
           it "saves the return value of the block as instance" do
-            subject.arg1.should == 30
-            subject.arg2.should == 40
+            expect(subject.arg1).to eq(30)
+            expect(subject.arg2).to eq(40)
           end
         end
 
@@ -113,7 +109,7 @@ describe Fabrication::Generator::Base do
 
     context "using an after_create hook" do
       let(:schematic) do
-        Fabrication::Schematic::Definition.new(ParentRubyObject) do
+        Fabrication::Schematic::Definition.new('ParentRubyObject') do
           string_field 'something'
           after_create { |k| k.string_field.upcase! }
         end
@@ -131,7 +127,7 @@ describe Fabrication::Generator::Base do
     context 'all the callbacks' do
       subject { schematic.build }
       let(:schematic) do
-        Fabrication::Schematic::Definition.new(ParentRubyObject) do
+        Fabrication::Schematic::Definition.new('ParentRubyObject') do
           string_field ""
           after_build { |k| k.string_field += '1' }
           before_validation { |k| k.string_field += '2' }
@@ -140,13 +136,30 @@ describe Fabrication::Generator::Base do
       end
       its(:string_field) { should == '1' }
     end
+
+    context 'with custom generators' do
+      before do
+        Fabrication.configure do |config|
+          config.generators << ImmutableGenerator
+        end
+      end
+
+      after do
+        Fabrication::Config.reset_defaults
+      end
+
+      it "uses custom generator" do
+        user = Fabricate(:immutable_user, name: 'foo')
+        expect(user.name).to eq('foo')
+      end
+    end
   end
 
   describe '#create' do
     context 'all the callbacks' do
       subject { schematic.fabricate }
       let(:schematic) do
-        Fabrication::Schematic::Definition.new(ParentRubyObject) do
+        Fabrication::Schematic::Definition.new('ParentRubyObject') do
           string_field ""
           after_build { |k| k.string_field += '1' }
           before_validation { |k| k.string_field += '2' }
@@ -168,7 +181,7 @@ describe Fabrication::Generator::Base do
     before { generator.send(:_instance=, instance) }
 
     it 'saves' do
-      instance.should_receive(:save!)
+      expect(instance).to receive(:save!)
       generator.send(:persist)
     end
   end
