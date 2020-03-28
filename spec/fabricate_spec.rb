@@ -4,8 +4,8 @@ describe Fabricate do
   describe ".times" do
     it "fabricates an object X times" do
       objects = Fabricate.times(3, :parent_ruby_object)
-      expect(objects).to have(3).elements
-      expect(objects.all?(&:persisted?)).to be_true
+      expect(objects.length).to eq 3
+      expect(objects.all?(&:persisted?)).to be true
     end
 
     it "delegates overrides and blocks properly" do
@@ -20,8 +20,8 @@ describe Fabricate do
   describe ".build_times" do
     it "fabricates an object X times" do
       objects = Fabricate.build_times(3, :parent_ruby_object)
-      expect(objects).to have(3).elements
-      expect(objects.all?(&:persisted?)).to be_false
+      expect(objects.length).to eq 3
+      expect(objects.all?(&:persisted?)).to be false
     end
 
     it "delegates overrides and blocks properly" do
@@ -30,6 +30,22 @@ describe Fabricate do
 
       object = Fabricate.build_times(1, :parent_ruby_object) { string_field 'other' }.first
       expect(object.string_field).to eql('other')
+    end
+  end
+
+  describe ".attributes_for_times" do
+    it "fabricates an object X times" do
+      objects = Fabricate.attributes_for_times(3, :parent_ruby_object)
+      expect(objects.length).to eq 3
+      expect(objects).to all be_a_kind_of(Hash)
+    end
+
+    it "delegates overrides and blocks properly" do
+      object = Fabricate.attributes_for_times(1, :parent_ruby_object, string_field: 'different').first
+      expect(object[:string_field]).to eql('different')
+
+      object = Fabricate.attributes_for_times(1, :parent_ruby_object) { string_field 'other' }.first
+      expect(object[:string_field]).to eql('other')
     end
   end
 

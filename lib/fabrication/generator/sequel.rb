@@ -23,17 +23,13 @@ class Fabrication::Generator::Sequel < Fabrication::Generator::Base
   end
 
   def persist
-    _instance.save
-  end
-
-  def validate_instance
-    _instance.valid?
+    _instance.save(raise_on_failure: true)
   end
 
   private
 
   def load_instance_hooks
-    klass = _klass.respond_to?(:cti_base_model) ? _klass.cti_base_model : _klass
+    klass = _klass.respond_to?(:cti_base_model) ? _klass.cti_models.first : _klass
     klass.plugin :instance_hooks unless klass.new.respond_to? :after_save_hook
   end
 

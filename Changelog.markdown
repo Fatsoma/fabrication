@@ -1,3 +1,143 @@
+### 2.20.2 ###
+
+* Fix for applications with a phony ActiveRecord module declared (#312)
+
+### 2.20.1 ###
+
+* Make #klass public so the `rake fabrication:list` works properly (#307)
+* Fix a bug preventing default expansions from singularizing when using `rand` option (#309)
+
+### 2.20.0 ###
+
+* Allow passing a range to rand (#292, #308)
+
+Now you can pass a range in as the `rand` option to get a random number of related objects. For example, to get a random number of `wockets` between 5 and 9 you could do this:
+
+```
+Fabricate(:widget) do
+  wockets(rand: 5..9)
+end
+```
+
+### 2.19.0 ###
+
+* Raise an error when a Sequel model fails to validate (#306)
+
+This is already how ActiveRecord models work within fabrication. If you are running Sequel and encounter errors after upgrading it is because these models were silently failing either in validation or callbacks. Raising errors in these cases will help you improve reliability of your tests.
+
+### 2.18.0 ###
+
+* Raise an error when fabrication detects a potentially infinite recursive build (#305)
+
+If you've set up fabricators that recursively call each other you may see an error like this:
+
+```
+You appear to have infinite recursion with the `user` fabricator
+```
+
+Your suite may even have been "working properly" before (one of mine was) but this error is now happening. Good news! You can improve the speed of your test suite AND avoid potential errors with a simple change.
+
+It's likely you have a scenario like this in the fabricator named by the error message.
+
+```
+Fabricator(:user) do
+  sessions(count: 1)
+end
+
+Fabricator(:session) do
+  user
+end
+```
+
+If you change the `user` fabricator to build with a nil inverse relationship all will be well again.
+
+```
+Fabricator(:user) do
+  sessions(count: 1) { Fabricate.build(:session, user: nil) }
+end
+```
+
+If you have any problems please email the google group and I'll help get you sorted. (fabricationgem@googlegroups.com)
+
+### 2.17.0 ###
+
+* Revert relationship inverse overrides #270
+* Drop support for unmaintained ruby versions (< 2.2)
+* Drop support for rails 3.1
+
+### 2.16.3 ###
+
+* Support nil prefix when loading files (for pickle compatibility) (#297)
+
+### 2.16.2 ###
+
+* require railtie only if Rails::Railtie is defined (#296)
+* Add explicit test suite support for Rails 5.1 and Mongoid 6
+* Fix a deprecation warning in sequel
+
+### 2.16.1 ###
+
+* Remove explicit include of Rake::DSL (#290)
+
+### 2.16.0 ###
+
+* Allow configuration of third-party model generators (#285)
+
+### 2.15.2 ###
+
+* Tweaks to prevent warnings from rspec with `--warnings` flag (#279)
+
+### 2.15.1 ###
+
+* Automatically set fabrication as fixture replacement in rails (#280)
+
+### 2.15.0 ###
+
+* Prevent validation callbacks from being called more than once
+* Support for belongs_to association detection in ActiveRecord
+
+### 2.14.1 ###
+
+* `include Rake::DSL` to prevent warnings in rake 0.9 and errors in rake 10 (#256)
+
+### 2.14.0 ###
+
+* Add `Fabricate.attributes_for_times` method.
+
+### 2.13.2 ###
+
+* Ignore errors produced from reading attributes during model generation
+
+### 2.13.1 ###
+
+* Wait to process fabricator definitions until they are actually used
+
+### 2.13.0 ###
+
+* Improved performance by lazily loading classes at fabricate time (#244)
+* Fields specified in ActiveRecord model generator will be included in Fabricator
+
+### 2.12.2 ###
+
+* Revert usage of ActiveSupport classify. This was expected to make it class resolution easier in Rails apps but turned out to cause a lot of trouble for some users. Everything is back to normal now.
+
+### 2.12.1 ###
+
+* Constantize class_name as it is supplied in fabricator definition (#238)
+
+### 2.12.0 ###
+
+* Fix typo in rake task
+* Leverage ActiveSupport's `classify` if available
+
+### 2.11.3 ###
+
+* Fixed a bug preventing the list rake task from working (#213)
+
+### 2.11.2 ###
+
+* Fixed a bug preventing multiple path_prefixes from being loaded
+
 ### 2.11.1 ###
 
 * Update string constantize to handle more edge cases (#209)

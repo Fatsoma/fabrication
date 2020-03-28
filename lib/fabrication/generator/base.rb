@@ -19,7 +19,6 @@ class Fabrication::Generator::Base
   def create(attributes=[], callbacks=[])
     build(attributes, callbacks)
     execute_callbacks(callbacks[:before_validation])
-    validate_instance
     execute_callbacks(callbacks[:after_validation])
     execute_callbacks(callbacks[:before_save])
     execute_callbacks(callbacks[:before_create])
@@ -52,7 +51,7 @@ class Fabrication::Generator::Base
   end
 
   def build_instance_with_constructor_override(callback)
-    self._instance = instance_eval &callback
+    self._instance = instance_eval(&callback)
     set_attributes
   end
 
@@ -80,8 +79,6 @@ class Fabrication::Generator::Base
     _attributes[method_name] || super
   end
 
-  def validate_instance; end
-
   protected
 
   attr_accessor :_klass, :_instance, :_transient_attributes
@@ -93,8 +90,6 @@ class Fabrication::Generator::Base
   def persist
     _instance.save! if _instance.respond_to?(:save!)
   end
-
-  def post_initialize; end
 
   def process_attributes(attributes)
     self._transient_attributes = Hash.new

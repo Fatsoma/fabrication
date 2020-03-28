@@ -18,21 +18,21 @@ describe Fabrication::Schematic::Manager do
     end
 
     it "creates a schematic" do
-      subject.schematics[:open_struct].should be
+      expect(subject.schematics[:open_struct]).to be
     end
 
-    it "has the correct class" do
-      subject.schematics[:open_struct].klass.should == OpenStruct
+    it "infers the correct class" do
+      expect(subject.schematics[:open_struct].send(:klass)).to eq(OpenStruct)
     end
 
     it "has the attributes" do
-      subject.schematics[:open_struct].attributes.size.should == 2
+      expect(subject.schematics[:open_struct].attributes.size).to eq(2)
     end
 
     context "with an alias" do
       it "recognizes the aliases" do
-        subject.schematics[:thing_one].should == subject.schematics[:open_struct]
-        subject.schematics[:thing_two].should == subject.schematics[:open_struct]
+        expect(subject.schematics[:thing_one]).to eq(subject.schematics[:open_struct])
+        expect(subject.schematics[:thing_two]).to eq(subject.schematics[:open_struct])
       end
     end
 
@@ -56,18 +56,26 @@ describe Fabrication::Schematic::Manager do
   describe ".load_definitions" do
     before { Fabrication.clear_definitions }
 
+    context 'with multiple path_prefixes and fabricator_paths' do
+      it 'loads them all' do
+        expect(Fabrication::Config.path_prefixes).to receive(:each).and_call_original
+        expect(Fabrication::Config.fabricator_paths).to receive(:each)
+        Fabrication.manager.load_definitions
+      end
+    end
+
     context 'happy path' do
       it "loaded definitions" do
         Fabrication.manager.load_definitions
-        Fabrication.manager[:parent_ruby_object].should be
+        expect(Fabrication.manager[:parent_ruby_object]).to be
       end
     end
 
     context 'when an error occurs during the load' do
       it 'still freezes the manager' do
-        Fabrication::Config.should_receive(:fabricator_path).and_raise(Exception)
-        expect { Fabrication.manager.load_definitions }.to raise_error
-        Fabrication.manager.should_not be_initializing
+        expect(Fabrication::Config).to receive(:fabricator_paths).and_raise(Exception)
+        expect { Fabrication.manager.load_definitions }.to raise_error(Exception)
+        expect(Fabrication.manager).not_to be_initializing
       end
     end
   end

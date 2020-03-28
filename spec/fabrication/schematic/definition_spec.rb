@@ -3,7 +3,7 @@ require 'spec_helper'
 describe Fabrication::Schematic::Definition do
 
   let(:schematic) do
-    Fabrication::Schematic::Definition.new(OpenStruct) do
+    Fabrication::Schematic::Definition.new('OpenStruct') do
       name "Orgasmo"
       something(:param => 2) { "hi!" }
       another_thing { 25 }
@@ -14,53 +14,62 @@ describe Fabrication::Schematic::Definition do
     subject { Fabrication::Schematic::Definition.new(klass).generator }
 
     context "for an activerecord object", depends_on: :active_record do
-      let(:klass) { ParentActiveRecordModel }
+      let(:klass) { 'ParentActiveRecordModel' }
       it { should == Fabrication::Generator::ActiveRecord }
     end
 
     context "for a mongoid object", depends_on: :mongoid do
-      let(:klass) { ParentMongoidDocument }
+      let(:klass) { 'ParentMongoidDocument' }
       it { should == Fabrication::Generator::Mongoid }
     end
 
     context "for a sequel object", depends_on: :sequel do
-      let(:klass) { ParentSequelModel }
+      let(:klass) { 'ParentSequelModel' }
       it { should == Fabrication::Generator::Sequel }
     end
   end
 
   describe ".new" do
-    it "stores the klass" do
-      schematic.klass.should == OpenStruct
+    it "stores the name" do
+      expect(schematic.name).to eq('OpenStruct')
     end
     it "stores the generator" do
-      schematic.generator.should == Fabrication::Generator::Base
+      expect(schematic.generator).to eq(Fabrication::Generator::Base)
     end
     it "stores the attributes" do
-      schematic.attributes.size.should == 3
+      expect(schematic.attributes.size).to eq(3)
     end
   end
 
   describe "#attribute" do
     it "returns the requested attribute if it exists" do
-      schematic.attribute(:name).name.should == :name
+      expect(schematic.attribute(:name).name).to eq(:name)
     end
     it "returns nil if it does not exist" do
-      schematic.attribute(:not_there).should be_nil
+      expect(schematic.attribute(:not_there)).to be_nil
     end
   end
 
   describe "#attributes" do
-    it "always returns an empty array" do
+    it "loads the fabricator body" do
       schematic.attributes = nil
-      schematic.attributes.should == []
+      expect(schematic).to receive(:load_body)
+      expect(schematic.attributes).to eq([])
+    end
+  end
+
+  describe "#callbacks" do
+    it "loads the fabricator body" do
+      schematic.callbacks = nil
+      expect(schematic).to receive(:load_body)
+      expect(schematic.callbacks).to eq({})
     end
   end
 
   describe "#fabricate" do
     context "an instance" do
       it "generates a new instance" do
-        schematic.fabricate.should be_kind_of(OpenStruct)
+        expect(schematic.fabricate).to be_kind_of(OpenStruct)
       end
     end
   end
@@ -69,14 +78,14 @@ describe Fabrication::Schematic::Definition do
     let(:hash) { schematic.to_attributes }
 
     it "generates a hash with the object's attributes" do
-      hash.should be_kind_of(Hash)
+      expect(hash).to be_kind_of(Hash)
     end
 
     it "has the correct attributes" do
-      hash.size.should == 3
-      hash[:name].should == 'Orgasmo'
-      hash[:something].should == "hi!"
-      hash[:another_thing].should == 25
+      expect(hash.size).to eq(3)
+      expect(hash[:name]).to eq('Orgasmo')
+      expect(hash[:something]).to eq("hi!")
+      expect(hash[:another_thing]).to eq(25)
     end
   end
 
@@ -90,25 +99,25 @@ describe Fabrication::Schematic::Definition do
 
       it "stored 'name' correctly" do
         attribute = subject.attribute(:name)
-        attribute.name.should == :name
-        attribute.params.should == {}
-        attribute.value.should == "Orgasmo"
+        expect(attribute.name).to eq(:name)
+        expect(attribute.params).to eq({})
+        expect(attribute.value).to eq("Orgasmo")
       end
 
       it "stored 'something' correctly" do
         attribute = subject.attribute(:something)
-        attribute.name.should == :something
-        attribute.params.should == { :param => 2 }
-        Proc.should === attribute.value
-        attribute.value.call.should == "hi!"
+        expect(attribute.name).to eq(:something)
+        expect(attribute.params).to eq({ :param => 2 })
+        expect(Proc).to be === attribute.value
+        expect(attribute.value.call).to eq("hi!")
       end
 
       it "stored 'another_thing' correctly" do
         attribute = subject.attribute(:another_thing)
-        attribute.name.should == :another_thing
-        attribute.params.should == {}
-        Proc.should === attribute.value
-        attribute.value.call.should == 25
+        expect(attribute.name).to eq(:another_thing)
+        expect(attribute.params).to eq({})
+        expect(Proc).to be === attribute.value
+        expect(attribute.value.call).to eq(25)
       end
 
     end
@@ -127,25 +136,25 @@ describe Fabrication::Schematic::Definition do
 
       it "stored 'name' correctly" do
         attribute = subject.attribute(:name)
-        attribute.name.should == :name
-        attribute.params.should == {}
-        Proc.should === attribute.value
-        attribute.value.call.should == "Willis"
+        expect(attribute.name).to eq(:name)
+        expect(attribute.params).to eq({})
+        expect(Proc).to be === attribute.value
+        expect(attribute.value.call).to eq("Willis")
       end
 
       it "stored 'something' correctly" do
         attribute = subject.attribute(:something)
-        attribute.name.should == :something
-        attribute.params.should == {}
-        attribute.value.should == "Else!"
+        expect(attribute.name).to eq(:something)
+        expect(attribute.params).to eq({})
+        expect(attribute.value).to eq("Else!")
       end
 
       it "stored 'another_thing' correctly" do
         attribute = subject.attribute(:another_thing)
-        attribute.name.should == :another_thing
-        attribute.params.should == { :thats_what => 'she_said' }
-        Proc.should === attribute.value
-        attribute.value.call.should == "Boo-ya!"
+        expect(attribute.name).to eq(:another_thing)
+        expect(attribute.params).to eq({ :thats_what => 'she_said' })
+        expect(Proc).to be === attribute.value
+        expect(attribute.value.call).to eq("Boo-ya!")
       end
 
     end
@@ -156,13 +165,13 @@ describe Fabrication::Schematic::Definition do
     let(:init_block) { lambda {} }
     let(:init_schematic) do
       block = init_block
-      Fabrication::Schematic::Definition.new(OpenStruct) do
-        on_init &block
+      Fabrication::Schematic::Definition.new('OpenStruct') do
+        on_init(&block)
       end
     end
 
     it "stores the on_init callback" do
-      init_schematic.callbacks[:on_init].should == init_block
+      expect(init_schematic.callbacks[:on_init]).to eq(init_block)
     end
 
     context "with inheritance" do
@@ -170,12 +179,12 @@ describe Fabrication::Schematic::Definition do
       let(:child_schematic) do
         block = child_block
         init_schematic.merge do
-          on_init &block
+          on_init(&block)
         end
       end
 
       it "overwrites the on_init callback" do
-        child_schematic.callbacks[:on_init].should == child_block
+        expect(child_schematic.callbacks[:on_init]).to eq(child_block)
       end
     end
   end
@@ -184,13 +193,13 @@ describe Fabrication::Schematic::Definition do
     let(:init_block) { lambda {} }
     let(:init_schematic) do
       block = init_block
-      Fabrication::Schematic::Definition.new(OpenStruct) do
-        initialize_with &block
+      Fabrication::Schematic::Definition.new('OpenStruct') do
+        initialize_with(&block)
       end
     end
 
     it "stores the initialize_with callback" do
-      init_schematic.callbacks[:initialize_with].should == init_block
+      expect(init_schematic.callbacks[:initialize_with]).to eq(init_block)
     end
 
     context "with inheritance" do
@@ -198,32 +207,32 @@ describe Fabrication::Schematic::Definition do
       let(:child_schematic) do
         block = child_block
         init_schematic.merge do
-          initialize_with &block
+          initialize_with(&block)
         end
       end
 
       it "overwrites the initialize_with callback" do
-        child_schematic.callbacks[:initialize_with].should == child_block
+        expect(child_schematic.callbacks[:initialize_with]).to eq(child_block)
       end
     end
   end
 
   describe '#transient' do
     let(:definition) do
-      Fabrication::Schematic::Definition.new(OpenStruct) do
+      Fabrication::Schematic::Definition.new('OpenStruct') do
         transient :one, :two => 'with a default value', :three => 200
       end
     end
 
     it 'stores the attributes as transient' do
-      definition.attributes.map(&:transient?).should == [true, true, true]
+      expect(definition.attributes.map(&:transient?)).to eq([true, true, true])
     end
 
     it "accept default value" do
-      definition.attributes[1].name.should == :two
-      definition.attributes[1].value.should == 'with a default value'
-      definition.attributes[2].name.should == :three
-      definition.attributes[2].value.should == 200
+      expect(definition.attributes[1].name).to eq(:two)
+      expect(definition.attributes[1].value).to eq('with a default value')
+      expect(definition.attributes[2].name).to eq(:three)
+      expect(definition.attributes[2].value).to eq(200)
     end
   end
 
@@ -236,12 +245,17 @@ describe Fabrication::Schematic::Definition do
   describe '#sorted_attributes' do
     subject { definition.sorted_attributes.map(&:name) }
     let(:definition) do
-      Fabrication::Schematic::Definition.new(OpenStruct) do
+      Fabrication::Schematic::Definition.new('OpenStruct') do
         three { nil }
         one ''
         transient :two
       end
     end
     it { should == [:one, :two, :three] }
+  end
+
+  describe '#klass' do
+    subject { schematic.klass }
+    it { should be OpenStruct }
   end
 end

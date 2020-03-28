@@ -1,6 +1,7 @@
 class Fabrication::Schematic::Attribute
 
-  attr_accessor :klass, :name, :params, :value
+  attr_accessor :klass, :name, :value
+  attr_writer :params
 
   def initialize(klass, name, value, params={}, &block)
     self.klass = klass
@@ -41,7 +42,7 @@ class Fabrication::Schematic::Attribute
   end
 
   def process_count
-    count || rand
+    count || rand || rand_range
   end
 
   def count
@@ -49,7 +50,16 @@ class Fabrication::Schematic::Attribute
   end
 
   def rand
-    Kernel.rand((1..params[:rand])) if params[:rand]
+    return unless params[:rand]
+
+    range = params[:rand]
+    range = 1..range unless range.is_a? Range
+
+    Kernel.rand(range)
+  end
+
+  def rand_range
+    Kernel.rand((params[:start_range]..params[:end_range])) if params[:start_range] && params[:end_range]
   end
 
 end

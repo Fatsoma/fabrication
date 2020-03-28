@@ -21,7 +21,7 @@ describe Fabrication::Schematic::Attribute do
       end
 
       it "has a proc for a value" do
-        Proc.should === subject.value
+        expect(Proc).to be === subject.value
       end
     end
 
@@ -66,7 +66,30 @@ describe Fabrication::Schematic::Attribute do
       end
 
       it 'returns random number of items in collection with a max of passed in value' do
-        (1..random_amount).should be_member(attribute.processed_value({}).length)
+        expect(1..random_amount).to be_member(attribute.processed_value({}).length)
+      end
+    end
+
+    context 'collection block with random amount given as range' do
+      let(:random_amount_range) { 10..21 }
+      let(:attribute) do
+        Fabrication::Schematic::Attribute.new(Object, "a", nil, {rand: random_amount_range}) { 'something' }
+      end
+
+      it 'returns random number of items in collection with a max of passed in value' do
+        expect(random_amount_range).to be_member(attribute.processed_value({}).length)
+      end
+    end
+
+    context 'collection block with random amount within a range' do
+      let(:range_start) { 10 }
+      let(:range_end) { 21 }
+      let(:attribute) do
+        Fabrication::Schematic::Attribute.new(Object, "a", nil, {start_range: range_start, end_range: range_end}) { 'something' }
+      end
+
+      it 'returns random number of items in collection with a min and max of passed in value' do
+        expect(range_start..range_end).to be_member(attribute.processed_value({}).length)
       end
     end
   end
